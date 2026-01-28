@@ -75,7 +75,9 @@ export const useLiveAgent = ({ systemInstruction, voiceName, onTranscriptUpdate 
   const connect = async () => {
     try {
       if (!aiRef.current) {
-        aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+        aiRef.current = new GoogleGenAI({ apiKey });
       }
 
       // 1. Setup Audio Inputs

@@ -1,33 +1,22 @@
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { ResearchContext, ResearchPlan, Question, AnalysisResult, ProjectReport } from '../types';
-import { SessionData } from './storage';
+import { GoogleGenAI } from "@google/genai";
 
-// Use gemini-3-pro-preview for complex reasoning tasks to ensure stability and quality
 const ORCHESTRATOR_MODEL = 'gemini-3-pro-preview';
 const ANALYSIS_MODEL = 'gemini-3-pro-preview';
 
-// Helper to clean potential markdown fencing or extra text if model ignores JSON mode
-const cleanJson = (text: string) => {
-  // 1. Remove markdown block markers
+const cleanJson = (text) => {
   let content = text.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
-
-  // 2. Locate the JSON object (find first '{' and last '}')
   const firstOpen = content.indexOf('{');
   const lastClose = content.lastIndexOf('}');
-
-  // 3. Extract if found, to ignore any preamble or postscript text
   if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
     content = content.substring(firstOpen, lastClose + 1);
   }
-  
   return content;
 };
 
-// Robust retry mechanism for 503/429 errors
-async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
+async function withRetry(operation, retries = 3, delay = 2000) {
   try {
     return await operation();
-  } catch (error: any) {
+  } catch (error) {
     const status = error?.status || error?.response?.status || error?.code || error?.error?.code;
     const isOverloaded = status === 503 || status === 429 || (error?.message && error.message.includes('overloaded'));
     
@@ -40,8 +29,7 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 20
   }
 }
 
-// Mandatory Identity Questions
-const IDENTITY_QUESTIONS: Question[] = [
+const IDENTITY_QUESTIONS = [
   {
       id: 'id_job',
       text: '为了更好地了解您，请问您的职业是什么？',
@@ -68,9 +56,9 @@ const IDENTITY_QUESTIONS: Question[] = [
   }
 ];
 
-export const generateResearchPlan = async (context: ResearchContext): Promise<ResearchPlan> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+export const generateResearchPlan = async (context) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
@@ -128,17 +116,16 @@ export const generateResearchPlan = async (context: ResearchContext): Promise<Re
     IMPORTANT: Output ONLY valid JSON. No conversational text.
   `;
 
-  const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
+  const response = await withRetry(() => ai.models.generateContent({
     model: ORCHESTRATOR_MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      // responseSchema removed to improve stability
     }
   }));
 
   if (!response.text) throw new Error("No response from Gemini");
-  const plan = JSON.parse(cleanJson(response.text)) as ResearchPlan;
+  const plan = JSON.parse(cleanJson(response.text));
   
   // Inject Mandatory Identity Questions
   plan.questions = [...IDENTITY_QUESTIONS, ...plan.questions];
@@ -154,17 +141,15 @@ export const generateResearchPlan = async (context: ResearchContext): Promise<Re
   return plan;
 };
 
-export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstructions: string): Promise<ResearchPlan> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+export const refineResearchPlan = async (currentPlan, refineInstructions) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });
 
-  // Separate fixed questions from dynamic questions to prevent AI from modifying/removing mandatory fields
   const fixedIds = IDENTITY_QUESTIONS.map(q => q.id);
   const fixedQuestions = currentPlan.questions.filter(q => fixedIds.includes(q.id));
   const dynamicQuestions = currentPlan.questions.filter(q => !fixedIds.includes(q.id));
 
-  // Construct a temporary plan for the AI context
   const planForAI = {
       ...currentPlan,
       questions: dynamicQuestions
@@ -195,7 +180,7 @@ export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstru
     IMPORTANT: Output ONLY valid JSON.
   `;
 
-  const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
+  const response = await withRetry(() => ai.models.generateContent({
     model: ORCHESTRATOR_MODEL,
     contents: prompt,
     config: {
@@ -204,20 +189,17 @@ export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstru
   }));
 
   if (!response.text) throw new Error("No response from Gemini");
-  const refinedPlan = JSON.parse(cleanJson(response.text)) as ResearchPlan;
+  const refinedPlan = JSON.parse(cleanJson(response.text));
   
-  // Merge fixed questions back
   refinedPlan.questions = [...fixedQuestions, ...refinedPlan.questions];
-
-  // Preserve voice settings
   refinedPlan.voiceSettings = currentPlan.voiceSettings;
   
   return refinedPlan;
 };
 
-export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisResult> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+export const analyzeTranscripts = async (transcripts) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
@@ -256,7 +238,7 @@ export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisR
     (TRANSCRIPT END)
   `;
 
-  const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
+  const response = await withRetry(() => ai.models.generateContent({
     model: ANALYSIS_MODEL,
     contents: prompt,
     config: {
@@ -265,15 +247,14 @@ export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisR
   }));
 
   if (!response.text) throw new Error("No analysis generated");
-  return JSON.parse(cleanJson(response.text)) as AnalysisResult;
+  return JSON.parse(cleanJson(response.text));
 };
 
-export const generateProjectReport = async (projectTitle: string, sessions: SessionData[]): Promise<ProjectReport> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+export const generateProjectReport = async (projectTitle, sessions) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const ai = new GoogleGenAI({ apiKey });
 
-  // 1. Aggregate transcripts
   const aggregatedContent = sessions
     .filter(s => s.transcript)
     .map((s, idx) => `
@@ -289,7 +270,6 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
     throw new Error("该项目暂无有效的访谈记录，无法生成报告。");
   }
 
-  // 2. Complex Prompt Construction
   const prompt = `
     你是一位顶级咨询顾问（McKinsey/BCG级别）兼人类学研究员。
     请基于以下所有调研会话记录，生成一份项目级的深度分析报告。
@@ -340,8 +320,8 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
     IMPORTANT: Output ONLY valid JSON.
   `;
 
-  const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-    model: ORCHESTRATOR_MODEL, // Use powerful model for aggregation
+  const response = await withRetry(() => ai.models.generateContent({
+    model: ORCHESTRATOR_MODEL,
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -356,6 +336,6 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
     title: rawReport.title,
     generatedAt: Date.now(),
     chapters: rawReport.chapters,
-    participantProfiles: rawReport.participantProfiles // Map new field
+    participantProfiles: rawReport.participantProfiles
   };
 };
