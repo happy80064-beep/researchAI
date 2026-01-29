@@ -128,6 +128,12 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ projectTitle, sessions })
   });
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.indexOf("application/json") === -1) {
+      throw new Error("Received HTML instead of JSON. Server may be down or misconfigured.");
+  }
+
   if (!response.ok) {
       const err = await response.json().catch(() => ({ error: response.statusText }));
       throw new Error(err.error || 'Failed to generate report');
