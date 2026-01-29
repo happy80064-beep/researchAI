@@ -69,8 +69,10 @@ const IDENTITY_QUESTIONS: Question[] = [
 ];
 
 export const generateResearchPlan = async (context: ResearchContext): Promise<ResearchPlan> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const apiKey = rawApiKey.trim();
+  
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
@@ -155,8 +157,9 @@ export const generateResearchPlan = async (context: ResearchContext): Promise<Re
 };
 
 export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstructions: string): Promise<ResearchPlan> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const apiKey = rawApiKey.trim();
   const ai = new GoogleGenAI({ apiKey });
 
   // Separate fixed questions from dynamic questions to prevent AI from modifying/removing mandatory fields
@@ -216,8 +219,9 @@ export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstru
 };
 
 export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisResult> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const apiKey = rawApiKey.trim();
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
@@ -269,8 +273,9 @@ export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisR
 };
 
 export const generateProjectReport = async (projectTitle: string, sessions: SessionData[]): Promise<ProjectReport> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
+  const apiKey = rawApiKey.trim();
   const ai = new GoogleGenAI({ apiKey });
 
   // 1. Aggregate transcripts
