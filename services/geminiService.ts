@@ -160,7 +160,7 @@ export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstru
   const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
   const apiKey = rawApiKey.trim();
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI(apiKey);
 
   // Separate fixed questions from dynamic questions to prevent AI from modifying/removing mandatory fields
   const fixedIds = IDENTITY_QUESTIONS.map(q => q.id);
@@ -222,7 +222,7 @@ export const analyzeTranscripts = async (transcripts: string): Promise<AnalysisR
   const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
   const apiKey = rawApiKey.trim();
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI(apiKey);
 
   const prompt = `
     作为首席数据分析师，请深入分析以下访谈/问卷记录。
@@ -276,7 +276,7 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
   const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
   const apiKey = rawApiKey.trim();
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI(apiKey);
 
   // 1. Aggregate transcripts
   const aggregatedContent = sessions
