@@ -57,8 +57,12 @@ const IDENTITY_QUESTIONS = [
 ];
 
 export const generateResearchPlan = async (context) => {
+  console.log('Starting generateResearchPlan with context type:', context.objectType);
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+  if (!apiKey) {
+      console.error('GEMINI_API_KEY is missing');
+      throw new Error("GEMINI_API_KEY is not set");
+  }
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `
@@ -320,6 +324,7 @@ export const generateProjectReport = async (projectTitle, sessions) => {
     IMPORTANT: Output ONLY valid JSON.
   `;
 
+  console.log('Sending prompt to Gemini...');
   const result = await withRetry(() => ai.models.generateContent({
     model: ORCHESTRATOR_MODEL,
     contents: prompt,
@@ -327,6 +332,7 @@ export const generateProjectReport = async (projectTitle, sessions) => {
       responseMimeType: "application/json",
     }
   }));
+  console.log('Gemini response received.');
 
   const response = result.response;
   if (!response.text()) throw new Error("Report generation failed");
