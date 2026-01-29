@@ -21,6 +21,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // API Routes
 app.post('/api/generate-plan', async (req, res) => {
     try {

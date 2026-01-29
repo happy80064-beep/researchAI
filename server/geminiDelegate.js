@@ -320,7 +320,7 @@ export const generateProjectReport = async (projectTitle, sessions) => {
     IMPORTANT: Output ONLY valid JSON.
   `;
 
-  const response = await withRetry(() => ai.models.generateContent({
+  const result = await withRetry(() => ai.models.generateContent({
     model: ORCHESTRATOR_MODEL,
     contents: prompt,
     config: {
@@ -328,9 +328,10 @@ export const generateProjectReport = async (projectTitle, sessions) => {
     }
   }));
 
-  if (!response.text) throw new Error("Report generation failed");
+  const response = result.response;
+  if (!response.text()) throw new Error("Report generation failed");
   
-  const rawReport = JSON.parse(cleanJson(response.text));
+  const rawReport = JSON.parse(cleanJson(response.text()));
   
   return {
     title: rawReport.title,
