@@ -160,7 +160,7 @@ export const refineResearchPlan = async (currentPlan: ResearchPlan, refineInstru
   const rawApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!rawApiKey) throw new Error("VITE_GEMINI_API_KEY is not set");
   const apiKey = rawApiKey.trim();
-  const ai = new GoogleGenAI(apiKey);
+  const ai = new GoogleGenAI({ apiKey });
 
   // Separate fixed questions from dynamic questions to prevent AI from modifying/removing mandatory fields
   const fixedIds = IDENTITY_QUESTIONS.map(q => q.id);
