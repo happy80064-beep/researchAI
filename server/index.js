@@ -85,6 +85,12 @@ app.post('/api/report', async (req, res) => {
     }
 });
 
+// Catch-all for undefined API routes
+app.all('/api/*', (req, res) => {
+    console.log(`[404] API Route not found: ${req.method} ${req.url}`);
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.url}` });
+});
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));

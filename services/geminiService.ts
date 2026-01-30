@@ -76,10 +76,27 @@ export const generateResearchPlan = async (context: ResearchContext): Promise<Re
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(context)
   });
+
+  const contentType = response.headers.get("content-type");
   if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(err.error || 'Failed to generate plan');
+      let errorMsg = response.statusText;
+      if (contentType && contentType.includes("application/json")) {
+          const err = await response.json().catch(() => ({}));
+          if (err.error) errorMsg = err.error;
+      } else {
+          // If not JSON (e.g. HTML 404), read text to debug but don't parse
+          const text = await response.text();
+          console.error(`API Error (${response.status}):`, text.substring(0, 200)); // Log first 200 chars
+      }
+      throw new Error(errorMsg || `Request failed with status ${response.status}`);
   }
+
+  if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Received non-JSON response:", text.substring(0, 200));
+      throw new Error("Server returned non-JSON response");
+  }
+
   const plan = await response.json();
   
   // Inject Mandatory Identity Questions
@@ -130,13 +147,21 @@ export const generateProjectReport = async (projectTitle: string, sessions: Sess
   });
 
   const contentType = response.headers.get("content-type");
-  if (contentType && contentType.indexOf("application/json") === -1) {
-      throw new Error("Received HTML instead of JSON. Server may be down or misconfigured.");
+  if (!response.ok) {
+      let errorMsg = response.statusText;
+      if (contentType && contentType.includes("application/json")) {
+          const err = await response.json().catch(() => ({}));
+          if (err.error) errorMsg = err.error;
+      } else {
+          const text = await response.text();
+          console.error(`API Error (${response.status}):`, text.substring(0, 200));
+      }
+      throw new Error(errorMsg || `Request failed with status ${response.status}`);
   }
 
-  if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(err.error || 'Failed to generate report');
+  if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("Server returned non-JSON response");
   }
-  return response.json();
+
+  return await response.json();
 };
