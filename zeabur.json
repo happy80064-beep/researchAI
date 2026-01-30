@@ -1,0 +1,6 @@
+{
+    "serviceName": "insightflow-ai",
+    "docker": {
+        "dockerfile": "Dockerfile"
+    }
+}
