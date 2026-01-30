@@ -98,17 +98,31 @@ app.all('/api/*', (req, res) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  const distPath = path.join(__dirname, '../dist');
+  console.log(`[Startup] Serving static files from: ${distPath}`);
+  
+  import('fs').then(fs => {
+      if (fs.existsSync(distPath)) {
+          console.log('[Startup] dist directory exists.');
+          console.log('[Startup] dist contents:', fs.readdirSync(distPath));
+      } else {
+          console.error('[Startup] CRITICAL: dist directory does NOT exist!');
+      }
+  });
+
+  app.use(express.static(distPath));
   
   app.get('*', (req, res) => {
     // Exclude API routes from wildcard match to prevent returning index.html for 404 APIs
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API not found' });
     }
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT} (bound to 0.0.0.0)`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Current Working Directory: ${process.cwd()}`);
 });
