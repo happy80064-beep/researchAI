@@ -75,9 +75,14 @@ app.post('/api/analyze', async (req, res) => {
 });
 
 app.post('/api/report', async (req, res) => {
+    console.log(`[POST] /api/report - Start`);
     try {
         const { projectTitle, sessions } = req.body;
+        console.log(`[POST] /api/report - Generating report for "${projectTitle}" with ${sessions?.length} sessions`);
+        
         const report = await generateProjectReport(projectTitle, sessions);
+        
+        console.log(`[POST] /api/report - Generation successful. Report title: ${report?.title}`);
         res.json(report);
     } catch (error) {
         console.error('Error generating report:', error);

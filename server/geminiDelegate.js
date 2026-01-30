@@ -120,7 +120,8 @@ export const generateResearchPlan = async (context) => {
     IMPORTANT: Output ONLY valid JSON. No conversational text.
   `;
 
-  const response = await withRetry(() => ai.models.generateContent({
+  console.log('Sending prompt to Gemini...');
+  const result = await withRetry(() => ai.models.generateContent({
     model: ORCHESTRATOR_MODEL,
     contents: prompt,
     config: {
@@ -128,8 +129,15 @@ export const generateResearchPlan = async (context) => {
     }
   }));
 
-  if (!response.text) throw new Error("No response from Gemini");
-  const plan = JSON.parse(cleanJson(response.text));
+  const response = result.response;
+  if (!response || (typeof response.text === 'function' && !response.text())) {
+      throw new Error("No response from Gemini");
+  }
+  
+  const text = typeof response.text === 'function' ? response.text() : response.text;
+  console.log('Gemini response received:', text ? text.substring(0, 50) + '...' : 'empty');
+  
+  const plan = JSON.parse(cleanJson(text));
   
   // Inject Mandatory Identity Questions
   plan.questions = [...IDENTITY_QUESTIONS, ...plan.questions];
